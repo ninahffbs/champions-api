@@ -1,7 +1,9 @@
-import { PlayerModel } from "../models/player-models";
-import { deleteOnePlayer, findAllPlayers, findPlayerById, insertPlayer } from "../repositories/players-repository";
+import { PlayerModel } from "../models/player-model";
+import { deleteOnePlayer, findAllPlayers, findAndModifyPlayer, findPlayerById, insertPlayer } from "../repositories/players-repository";
 import { badRequest, created, noContent, ok } from "../utils/http-helper";
 import { httpResponse } from "../models/http-response-models"
+import { StatisticsModel } from "../models/statistics-model";
+import { response } from "express";
 
 export const getPlayerService = async()=>{
     const data = await findAllPlayers();
@@ -22,10 +24,10 @@ export const getPlayerByIdService = async(id: number) => {
     console.log(id);
     let response = null;
     if(data){
-        response = ok(data);
+        response = await ok(data);
     }
     else{
-        response = noContent();
+        response = await noContent();
     }
     return response;
 }
@@ -35,19 +37,36 @@ export const createPlayerService = async(player: PlayerModel) => {
 
     if(Object.keys(player).length !== 0){
         await insertPlayer(player);
-        response = created();
+        response = await created();
         console.log(player);
     }
     else{
-        response = badRequest();
+        response = await badRequest();
     }
     return response;
 }
 
 export const deletePlayerService = async(id: number) => {
     let response = null;
+    const isDeleted = await deleteOnePlayer(id);
     await deleteOnePlayer(id);
+    if(isDeleted){
+        response = await ok({message: "deleted"});
+    }
+    else{
+        response = await badRequest();
+    }
+    return response;
+}
 
-    response = ok({message: "deleted"});
+export const updatePlayerService = async(id: number, statistics: StatisticsModel) => {
+    const data = await findAndModifyPlayer(id, statistics);
+    let response = null;
+    if(Object.keys(data).length === 0){
+        response = await badRequest();
+    }
+    else{
+        response = await ok(data);
+    }
     return response;
 }
